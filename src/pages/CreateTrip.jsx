@@ -1,177 +1,401 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { Calendar, DollarSign, MapPin, Users, Plane, ArrowRight, ArrowLeft, Check, Sparkles } from 'lucide-react'
+import Layout from '../components/common/Layout'
+import GlassCard from '../components/common/GlassCard'
+import useTripStore from '../store/tripStore'
+import useUIStore from '../store/uiStore'
 
 const CreateTrip = () => {
   const navigate = useNavigate()
+  const { createTrip, cities } = useTripStore()
+  const { addToast } = useUIStore()
+
+  const [step, setStep] = useState(1)
   const [formData, setFormData] = useState({
     name: '',
+    description: '',
     startDate: '',
     endDate: '',
-    description: '',
-    coverPhoto: null
+    travelers: 1,
+    budget: {
+      total: 5000,
+      transport: 0,
+      accommodation: 0,
+      activities: 0,
+      food: 0,
+      other: 0
+    },
+    selectedCities: [],
+    travelStyle: 'balanced'
   })
-  const [isSubmitting, setIsSubmitting] = useState(false)
-  const [preview, setPreview] = useState(null)
 
-  const handleInputChange = (e) => {
-    const { name, value, files } = e.target
-    if (name === 'coverPhoto') {
-      const file = files[0]
-      if (file) {
-        const reader = new FileReader()
-        reader.onloadend = () => {
-          setPreview(reader.result)
-        }
-        reader.readAsDataURL(file)
-        setFormData({ ...formData, coverPhoto: file })
-      }
-    } else {
-      setFormData({ ...formData, [name]: value })
+  const travelStyles = [
+    { value: 'budget', label: 'Budget', icon: '💰', desc: 'Maximize experiences, minimize costs' },
+    { value: 'balanced', label: 'Balanced', icon: '⚖️', desc: 'Mix of comfort and savings' },
+    { value: 'comfort', label: 'Comfort', icon: '✨', desc: 'Focus on quality experiences' },
+    { value: 'luxury', label: 'Luxury', icon: '👑', desc: 'Premium everything' }
+  ]
+
+  const handleSubmit = () => {
+    if (!formData.name) {
+      addToast({ type: 'error', message: 'Please enter a trip name' })
+      return
     }
+    if (!formData.startDate || !formData.endDate) {
+      addToast({ type: 'error', message: 'Please select travel dates' })
+      return
+    }
+
+    const newTrip = createTrip({
+      name: formData.name,
+      description: formData.description,
+      startDate: formData.startDate,
+      endDate: formData.endDate,
+      travelers: formData.travelers,
+      budget: formData.budget,
+      travelStyle: formData.travelStyle,
+      stops: formData.selectedCities.map(cityId => {
+        const city = cities.find(c => c.id === cityId)
+        return {
+          id: `stop-${Date.now()}-${Math.random()}`,
+          city,
+          duration: 2,
+          activities: []
+        }
+      })
+    })
+
+    addToast({ type: 'success', message: 'Trip created successfully!' })
+    navigate(`/trip/${newTrip.id}`)
   }
 
-  const handleSubmit = async (e) => {
-    e.preventDefault()
-    setIsSubmitting(true)
+  const nextStep = () => setStep(s => Math.min(s + 1, 4))
+  const prevStep = () => setStep(s => Math.max(s - 1, 1))
 
-    setTimeout(() => {
-      console.log('Trip created:', formData)
-      alert('✅ Trip created successfully!')
-      navigate('/dashboard')
-      setIsSubmitting(false)
-    }, 1500)
+  const toggleCity = (cityId) => {
+    setFormData(prev => ({
+      ...prev,
+      selectedCities: prev.selectedCities.includes(cityId)
+        ? prev.selectedCities.filter(id => id !== cityId)
+        : [...prev.selectedCities, cityId]
+    }))
   }
-
-  const isFormValid = formData.name && formData.startDate && formData.endDate && formData.description
 
   return (
-    <div className="min-h-screen relative overflow-hidden bg-gradient-to-br from-slate-900 via-purple-900/20 to-slate-900">
-      <div className="fixed inset-0 bg-cover bg-center bg-no-repeat bg-fixed opacity-50" 
-           style={{backgroundImage: "url('https://images.unsplash.com/photo-1544551763-46a013bb70d5?w=2400&q=95&fm=webp')"}} />
-      
-      <div className="relative z-20 min-h-screen py-12 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-2xl mx-auto">
-          
-          <div className="text-center mb-16">
-            <button 
-              onClick={() => navigate('/dashboard')}
-              className="glass-premium inline-flex items-center space-x-2 px-6 py-3 rounded-3xl mb-8 hover:scale-105 transition-all duration-300"
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-              </svg>
-              <span>Back to Dashboard</span>
-            </button>
-            <h1 className="text-5xl font-black gradient-text mb-6">Create New Trip</h1>
-            <p className="text-xl text-slate-300 max-w-md mx-auto">
-              Plan your next adventure by creating a personalized travel itinerary
-            </p>
+    <Layout>
+      <div className="min-h-screen py-6 sm:py-8 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-4xl mx-auto">
+          {/* Header */}
+          <div className="text-center mb-8 sm:mb-12">
+            <div className="inline-flex items-center justify-center w-14 h-14 sm:w-16 sm:h-16 rounded-2xl gradient-amber mb-4">
+              <Plane className="w-7 h-7 sm:w-8 sm:h-8 text-white" />
+            </div>
+            <h1 className="text-3xl sm:text-4xl font-bold text-white mb-2">Create Your Trip</h1>
+            <p className="text-white/60 text-sm sm:text-base">Plan your next adventure in a few simple steps</p>
           </div>
 
-          <div className="glass-premium rounded-4xl p-12 max-w-2xl mx-auto">
-            <form onSubmit={handleSubmit} className="space-y-8">
-              
-              <div>
-                <label className="block text-lg font-semibold mb-4 text-white">Trip Name</label>
-                <input
-                  type="text"
-                  name="name"
-                  placeholder="e.g. Santorini Summer Escape"
-                  value={formData.name}
-                  onChange={handleInputChange}
-                  className="w-full px-6 py-4 bg-white/5 border border-white/20 rounded-3xl text-white placeholder-slate-400 focus:outline-none focus:border-white/50 transition-all duration-300 text-xl"
-                  required
-                />
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <label className="block text-lg font-semibold mb-4 text-white">Start Date</label>
-                  <input
-                    type="date"
-                    name="startDate"
-                    value={formData.startDate}
-                    onChange={handleInputChange}
-                    className="w-full px-6 py-4 bg-white/5 border border-white/20 rounded-3xl text-white focus:outline-none focus:border-white/50 transition-all duration-300"
-                    required
-                  />
-                </div>
-                <div>
-                  <label className="block text-lg font-semibold mb-4 text-white">End Date</label>
-                  <input
-                    type="date"
-                    name="endDate"
-                    value={formData.endDate}
-                    onChange={handleInputChange}
-                    min={formData.startDate}
-                    className="w-full px-6 py-4 bg-white/5 border border-white/20 rounded-3xl text-white focus:outline-none focus:border-white/50 transition-all duration-300"
-                    required
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-lg font-semibold mb-4 text-white">Cover Photo (Optional)</label>
-                <div className="relative">
-                  <input
-                    type="file"
-                    name="coverPhoto"
-                    accept="image/*"
-                    onChange={handleInputChange}
-                    className="w-full px-6 py-4 bg-white/5 border-2 border-dashed border-white/30 rounded-3xl text-white file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-semibold file:bg-white/10 file:text-white hover:file:bg-white/20 transition-all duration-300"
-                  />
-                  {preview && (
-                    <div className="mt-4 glass-premium rounded-3xl p-4">
-                      <img src={preview} alt="Preview" className="w-full h-48 object-cover rounded-2xl" />
-                    </div>
+          {/* Progress */}
+          <div className="flex items-center justify-center mb-8 sm:mb-12 px-4">
+            <div className="flex items-center max-w-md w-full">
+              {[1, 2, 3, 4].map((s) => (
+                <div key={s} className="flex items-center flex-1 last:flex-none">
+                  <div className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center font-bold text-sm sm:text-base transition-all flex-shrink-0 ${
+                    step > s 
+                      ? 'bg-emerald-500 text-white' 
+                      : step !== s ? 'bg-white/10 text-white/50' : 'text-white'
+                  }`}
+                  style={step === s ? { background: 'linear-gradient(135deg, #fbbf24, #f97316)', transform: 'scale(1.1)' } : {}}
+                  >
+                    {step > s ? <Check className="w-4 h-4 sm:w-5 sm:h-5" /> : s}
+                  </div>
+                  {s < 4 && (
+                    <div className={`flex-1 h-1 mx-1 sm:mx-2 rounded-full ${step > s ? 'bg-emerald-500' : 'bg-white/10'}`} />
                   )}
                 </div>
-              </div>
+              ))}
+            </div>
+          </div>
 
-              <div>
-                <label className="block text-lg font-semibold mb-4 text-white">Trip Description</label>
-                <textarea
-                  name="description"
-                  placeholder="Tell us about your dream trip... destinations, activities, travel style, budget, etc."
-                  value={formData.description}
-                  onChange={handleInputChange}
-                  rows={6}
-                  className="w-full px-6 py-4 bg-white/5 border border-white/20 rounded-3xl text-white placeholder-slate-400 focus:outline-none focus:border-white/50 transition-all duration-300 resize-vertical text-lg"
-                  required
-                />
-              </div>
+          {/* Step Content */}
+          <GlassCard variant="premium" className="mb-8">
+            {step === 1 && (
+              <div className="space-y-6">
+                <h2 className="text-2xl font-bold text-white mb-6">Basic Information</h2>
+                
+                <div>
+                  <label className="block text-white/70 text-sm mb-2">Trip Name *</label>
+                  <input
+                    type="text"
+                    value={formData.name}
+                    onChange={(e) => setFormData({...formData, name: e.target.value})}
+                    className="input-glass w-full text-lg"
+                    placeholder="European Adventure 2025"
+                  />
+                </div>
 
-              <button
-                type="submit"
-                disabled={!isFormValid || isSubmitting}
-                className={`w-full py-8 px-12 rounded-4xl font-bold text-2xl flex items-center justify-center space-x-4 transition-all duration-500 ${
-                  isFormValid && !isSubmitting
-                    ? 'bg-gradient-to-r from-emerald-500 to-teal-600 hover:shadow-3xl hover:scale-[1.02] shadow-2xl border-2 border-emerald-400/50'
-                    : 'bg-slate-700/50 border-2 border-slate-600/50 cursor-not-allowed'
-                }`}
-              >
-                {isSubmitting ? (
-                  <>
-                    <svg className="animate-spin w-8 h-8" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                    </svg>
-                    <span>Creating Trip...</span>
-                  </>
-                ) : (
-                  <>
-                    <svg className="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                    </svg>
-                    <span>Create My Trip</span>
-                  </>
+                <div>
+                  <label className="block text-white/70 text-sm mb-2">Description</label>
+                  <textarea
+                    value={formData.description}
+                    onChange={(e) => setFormData({...formData, description: e.target.value})}
+                    rows={3}
+                    className="input-glass w-full resize-none"
+                    placeholder="A brief description of your trip..."
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <label className="block text-white/70 text-sm mb-2">Start Date *</label>
+                    <div className="relative">
+                      <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-white/50" />
+                      <input
+                        type="date"
+                        value={formData.startDate}
+                        onChange={(e) => setFormData({...formData, startDate: e.target.value})}
+                        className="input-glass pl-12 w-full"
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-white/70 text-sm mb-2">End Date *</label>
+                    <div className="relative">
+                      <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-white/50" />
+                      <input
+                        type="date"
+                        value={formData.endDate}
+                        onChange={(e) => setFormData({...formData, endDate: e.target.value})}
+                        min={formData.startDate}
+                        className="input-glass pl-12 w-full"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-white/70 text-sm mb-2">Number of Travelers</label>
+                  <div className="relative">
+                    <Users className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-white/50" />
+                    <input
+                      type="number"
+                      min={1}
+                      max={20}
+                      value={formData.travelers}
+                      onChange={(e) => setFormData({...formData, travelers: parseInt(e.target.value) || 1})}
+                      className="input-glass pl-12 w-full"
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {step === 2 && (
+              <div className="space-y-6">
+                <h2 className="text-2xl font-bold text-white mb-6">Select Destinations</h2>
+                <p className="text-white/60 mb-4">Choose the cities you want to visit</p>
+                
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                  {cities.map(city => {
+                    const isSelected = formData.selectedCities.includes(city.id)
+                    return (
+                      <div
+                        key={city.id}
+                        onClick={() => toggleCity(city.id)}
+                        className={`relative h-40 rounded-2xl overflow-hidden cursor-pointer transition-all ${
+                          isSelected ? 'ring-3 ring-amber-500 scale-105' : 'hover:scale-102'
+                        }`}
+                      >
+                        <img
+                          src={city.image}
+                          alt={city.name}
+                          className="w-full h-full object-cover"
+                        />
+                        <div className="absolute inset-0" style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.8), rgba(0,0,0,0.2), transparent)' }} />
+                        
+                        {isSelected && (
+                          <div className="absolute top-3 right-3 w-8 h-8 rounded-full bg-amber-500 flex items-center justify-center">
+                            <Check className="w-5 h-5 text-white" />
+                          </div>
+                        )}
+                        
+                        <div className="absolute bottom-3 left-3 right-3">
+                          <h4 className="text-white font-bold">{city.name}</h4>
+                          <p className="text-white/70 text-sm">{city.country}</p>
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+
+                {formData.selectedCities.length > 0 && (
+                  <p className="text-amber-400 text-sm">
+                    {formData.selectedCities.length} destination{formData.selectedCities.length > 1 ? 's' : ''} selected
+                  </p>
                 )}
+              </div>
+            )}
+
+            {step === 3 && (
+              <div className="space-y-6">
+                <h2 className="text-2xl font-bold text-white mb-6">Budget & Style</h2>
+                
+                <div>
+                  <label className="block text-white/70 text-sm mb-2">Total Budget (USD)</label>
+                  <div className="relative">
+                    <DollarSign className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-white/50" />
+                    <input
+                      type="number"
+                      min={500}
+                      step={100}
+                      value={formData.budget.total}
+                      onChange={(e) => setFormData({
+                        ...formData, 
+                        budget: { ...formData.budget, total: parseInt(e.target.value) || 0 }
+                      })}
+                      className="input-glass pl-12 w-full text-2xl font-bold"
+                    />
+                  </div>
+                  <p className="text-white/50 text-sm mt-2">
+                    ${Math.round(formData.budget.total / formData.travelers)} per person
+                  </p>
+                </div>
+
+                <div>
+                  <label className="block text-white/70 text-sm mb-4">Travel Style</label>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    {travelStyles.map(style => (
+                      <div
+                        key={style.value}
+                        onClick={() => setFormData({...formData, travelStyle: style.value})}
+                        className={`p-4 rounded-2xl cursor-pointer text-center transition-all ${
+                          formData.travelStyle !== style.value
+                            ? 'bg-white/5 hover:bg-white/10'
+                            : 'ring-2 ring-amber-500'
+                        }`}
+                        style={formData.travelStyle === style.value ? { background: 'linear-gradient(135deg, rgba(251, 191, 36, 0.3), rgba(249, 115, 22, 0.3))' } : {}}
+                      >
+                        <span className="text-3xl mb-2 block">{style.icon}</span>
+                        <h4 className="text-white font-bold">{style.label}</h4>
+                        <p className="text-white/50 text-xs mt-1">{style.desc}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Budget Allocation */}
+                <div className="space-y-4 mt-8">
+                  <h4 className="text-white font-medium">Budget Allocation (Optional)</h4>
+                  
+                  {['transport', 'accommodation', 'food', 'activities', 'other'].map(category => (
+                    <div key={category} className="flex items-center space-x-4">
+                      <span className="text-white/70 capitalize w-28">{category}</span>
+                      <input
+                        type="range"
+                        min={0}
+                        max={formData.budget.total}
+                        value={formData.budget[category]}
+                        onChange={(e) => setFormData({
+                          ...formData,
+                          budget: { ...formData.budget, [category]: parseInt(e.target.value) }
+                        })}
+                        className="flex-1 accent-amber-500"
+                      />
+                      <span className="text-white w-20 text-right">${formData.budget[category]}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {step === 4 && (
+              <div className="space-y-6">
+                <h2 className="text-2xl font-bold text-white mb-6 flex items-center">
+                  <Sparkles className="w-6 h-6 mr-2 text-amber-400" />
+                  Review Your Trip
+                </h2>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="glass p-6 rounded-2xl">
+                    <h4 className="text-white/60 text-sm uppercase tracking-wider mb-3">Trip Details</h4>
+                    <p className="text-white text-xl font-bold mb-2">{formData.name || 'Unnamed Trip'}</p>
+                    {formData.description && (
+                      <p className="text-white/60 text-sm mb-4">{formData.description}</p>
+                    )}
+                    <div className="space-y-2 text-sm">
+                      <p className="text-white/70 flex items-center">
+                        <Calendar className="w-4 h-4 mr-2 text-amber-400" />
+                        {formData.startDate || 'Not set'} → {formData.endDate || 'Not set'}
+                      </p>
+                      <p className="text-white/70 flex items-center">
+                        <Users className="w-4 h-4 mr-2 text-amber-400" />
+                        {formData.travelers} traveler{formData.travelers > 1 ? 's' : ''}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="glass p-6 rounded-2xl">
+                    <h4 className="text-white/60 text-sm uppercase tracking-wider mb-3">Budget</h4>
+                    <p className="text-3xl font-bold gradient-text mb-2">${formData.budget.total.toLocaleString()}</p>
+                    <p className="text-white/60 text-sm mb-4">
+                      ${Math.round(formData.budget.total / formData.travelers).toLocaleString()} per person
+                    </p>
+                    <div className="flex items-center space-x-2">
+                      <span className="text-2xl">{travelStyles.find(s => s.value === formData.travelStyle)?.icon}</span>
+                      <span className="text-white capitalize">{formData.travelStyle} style</span>
+                    </div>
+                  </div>
+                </div>
+
+                {formData.selectedCities.length > 0 && (
+                  <div className="glass p-6 rounded-2xl">
+                    <h4 className="text-white/60 text-sm uppercase tracking-wider mb-3">Destinations</h4>
+                    <div className="flex flex-wrap gap-3">
+                      {formData.selectedCities.map(cityId => {
+                        const city = cities.find(c => c.id === cityId)
+                        return (
+                          <div key={cityId} className="flex items-center space-x-2 bg-white/10 px-4 py-2 rounded-full">
+                            <MapPin className="w-4 h-4 text-amber-400" />
+                            <span className="text-white">{city?.name}</span>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+          </GlassCard>
+
+          {/* Navigation */}
+          <div className="flex items-center justify-between">
+            {step > 1 ? (
+              <button onClick={prevStep} className="btn-glass py-3 px-6 flex items-center space-x-2">
+                <ArrowLeft className="w-5 h-5" />
+                <span>Back</span>
               </button>
-            </form>
+            ) : (
+              <button onClick={() => navigate(-1)} className="btn-glass py-3 px-6 flex items-center space-x-2">
+                <ArrowLeft className="w-5 h-5" />
+                <span>Cancel</span>
+              </button>
+            )}
+
+            {step < 4 ? (
+              <button onClick={nextStep} className="btn-primary py-3 px-8 flex items-center space-x-2">
+                <span>Continue</span>
+                <ArrowRight className="w-5 h-5" />
+              </button>
+            ) : (
+              <button onClick={handleSubmit} className="btn-primary py-3 px-8 flex items-center space-x-2">
+                <Sparkles className="w-5 h-5" />
+                <span>Create Trip</span>
+              </button>
+            )}
           </div>
         </div>
       </div>
-    </div>
+    </Layout>
   )
 }
 

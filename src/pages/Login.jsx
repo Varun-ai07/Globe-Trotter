@@ -1,543 +1,319 @@
-import { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useState } from 'react'
+import { useNavigate, Link } from 'react-router-dom'
+import { Mail, Lock, User, Eye, EyeOff, Globe, Plane } from 'lucide-react'
+import useAuthStore from '../store/authStore'
+import useUIStore from '../store/uiStore'
 
-const GlobeTrotterAuth = () => {
-  const [view, setView] = useState('login')
-  const [formData, setFormData] = useState({
-    name: '', email: '', password: '', adventureType: '',
-    budgetRange: '', travelStyle: '', preferredDestinations: '', tripDuration: ''
-  })
-  const [loading, setLoading] = useState(false)
-  const [message, setMessage] = useState('')
-  const [isVisible, setIsVisible] = useState(false)
+const Login = () => {
   const navigate = useNavigate()
+  const { login, signup, isAuthenticated } = useAuthStore()
+  const { addToast } = useUIStore()
+  
+  const [isSignUp, setIsSignUp] = useState(false)
+  const [showPassword, setShowPassword] = useState(false)
+  const [loading, setLoading] = useState(false)
+  const [formData, setFormData] = useState({
+    name: '',
+    email: '',
+    password: '',
+    confirmPassword: ''
+  })
 
-  // 🎬 SMOOTH PAGE LOAD ANIMATION
-  useEffect(() => {
-    setIsVisible(true)
-  }, [])
-
-  const handleInputChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value })
-    if (message) setMessage('')
+  // Redirect if already logged in
+  if (isAuthenticated) {
+    navigate('/')
+    return null
   }
 
-  const validateEmail = (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
-
-  const handleLogin = async (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault()
-    if (!formData.email || !formData.password) {
-      setMessage('Please enter email and password')
-      return
-    }
     setLoading(true)
-    setTimeout(() => {
+
+    try {
+      if (isSignUp) {
+        if (formData.password !== formData.confirmPassword) {
+          addToast({ type: 'error', message: 'Passwords do not match' })
+          setLoading(false)
+          return
+        }
+        if (formData.password.length < 6) {
+          addToast({ type: 'error', message: 'Password must be at least 6 characters' })
+          setLoading(false)
+          return
+        }
+        await signup(formData.name, formData.email, formData.password)
+        addToast({ type: 'success', message: 'Account created successfully!' })
+      } else {
+        await login(formData.email, formData.password)
+        addToast({ type: 'success', message: 'Welcome back!' })
+      }
+      navigate('/')
+    } catch (error) {
+      addToast({ type: 'error', message: error.message || 'Authentication failed' })
+    } finally {
       setLoading(false)
-      navigate('/dashboard')
-    }, 1500)
-  }
-
-  const handleSignup = async (e) => {
-    e.preventDefault()
-    if (!formData.name || !formData.email || !formData.password) {
-      setMessage('Please fill all required fields')
-      return
     }
-    if (!validateEmail(formData.email)) {
-      setMessage('Please enter a valid email')
-      return
-    }
-    if (formData.password.length < 6) {
-      setMessage('Password must be at least 6 characters')
-      return
-    }
-
-    setLoading(true)
-    setTimeout(() => {
-      setLoading(false)
-      setMessage('Welcome aboard! Your preferences saved for personalized recommendations.')
-      setView('success')
-    }, 2000)
-  }
-
-  const resetForm = () => {
-    setFormData({
-      name: '', email: '', password: '', adventureType: '',
-      budgetRange: '', travelStyle: '', preferredDestinations: '', tripDuration: ''
-    })
-    setMessage('')
-    setView('login')
   }
 
   return (
-    <>
-      <div className="fixed inset-0 z-0"
-           style={{
-             backgroundImage: `url('https://images.unsplash.com/photo-1519046904884-53103b34b206?ixlib=rb-4.0.3&auto=format&fit=crop&w=2071&q=90')`,
-             backgroundSize: 'cover',
-             backgroundPosition: 'center',
-             backgroundAttachment: 'fixed',
-             filter: 'brightness(1.2) contrast(1.1) blur(0.5px)'
-           }} />
-      
-      <div className="min-h-screen relative flex items-center justify-center px-6 py-12 z-10">
-        <div className="absolute inset-0 bg-gradient-to-br from-black/30 via-black/20 to-black/35" />
-        
-        <style jsx>{`
-          @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
-          * { 
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; 
-            font-weight: 500; 
-            -webkit-font-smoothing: antialiased;
-            -moz-osx-font-smoothing: grayscale;
-            letter-spacing: -0.01em;
-          }
+    <div className="min-h-screen relative overflow-hidden bg-gradient-to-br from-gray-900 via-gray-800 to-black">
+      {/* Animated Background */}
+      <div 
+        className="fixed inset-0 bg-cover bg-center bg-no-repeat opacity-20"
+        style={{ 
+          backgroundImage: 'url(/we.jpeg)',
+          transform: 'scale(1.1)',
+          animation: 'slowZoom 30s infinite alternate'
+        }}
+      />
+      <div className="fixed inset-0 bg-gradient-to-br from-black/70 via-transparent to-black/60 backdrop-blur-sm" />
 
-          /* 🎬 SMOOTH PAGE TRANSITION */
-          .page-enter {
-            opacity: 0;
-            transform: translateY(40px) scale(0.95);
-          }
-          .page-enter-active {
-            opacity: 1;
-            transform: translateY(0) scale(1);
-            transition: all 0.8s cubic-bezier(0.34,1.56,0.64,1);
-          }
+      {/* Floating Particles */}
+      <div className="absolute inset-0 overflow-hidden">
+        {[...Array(15)].map((_, i) => (
+          <div
+            key={i}
+            className="absolute w-1 h-1 bg-amber-400/30 rounded-full"
+            style={{
+              left: `${Math.random() * 100}%`,
+              top: `${Math.random() * 100}%`,
+              animation: `float ${3 + Math.random() * 4}s infinite ease-in-out ${Math.random() * 2}s`,
+              boxShadow: '0 0 10px 2px rgba(245, 158, 11, 0.3)'
+            }}
+          />
+        ))}
+      </div>
 
-          .view-transition {
-            transition: all 0.6s cubic-bezier(0.34,1.56,0.64,1);
-          }
-          
-          .universal-text { 
-            color: #ffffff !important; 
-            text-shadow: 0 4px 20px rgba(0,0,0,0.9);
-          }
-          
-          .h1-hero { 
-            font-size: clamp(2.6rem, 8vw, 3.8rem); 
-            font-weight: 900; 
-            line-height: 0.92;
-            letter-spacing: -0.03em;
-            margin-bottom: 1.2rem;
-            max-width: 500px;
-          }
-          
-          .h2-subtitle { 
-            font-size: clamp(1.25rem, 4vw, 1.65rem); 
-            font-weight: 400; 
-            margin-bottom: 3.5rem;
-            max-width: 450px;
-            opacity: 0.95;
-          }
-          
-          .floating-field {
-            position: relative;
-            margin-bottom: 2rem;
-            transition: all 0.4s ease;
-          }
-
-          /* 🎨 GLOWING INPUTS (GLASS) */
-          .floating-input {
-            width: 100%; height: 52px; padding: 0 24px;
-            font-size: 16px; font-weight: 500;
-            background: rgba(255,255,255,0.15);
-            backdrop-filter: blur(50px) saturate(200%);
-            border: 2px solid rgba(255,255,255,0.3);
-            border-radius: 24px;
-            color: #ffffff !important;
-            transition: all 0.5s cubic-bezier(0.34,1.56,0.64,1);
-            box-shadow: 
-              0 25px 80px rgba(0,0,0,0.5),
-              inset 0 1px 0 rgba(255,255,255,0.4);
-          }
-          
-          .floating-input:focus, .floating-input:hover {
-            outline: none;
-            background: rgba(255,255,255,0.25);
-            border-color: rgba(251,191,36,0.9);
-            box-shadow: 
-              0 0 0 4px rgba(251,191,36,0.2),
-              0 40px 120px rgba(0,0,0,0.7),
-              inset 0 1px 0 rgba(255,255,255,0.8),
-              0 0 40px rgba(251,191,36,0.15);
-            transform: translateY(-4px) scale(1.02);
-          }
-          
-          .floating-input::placeholder { 
-            color: rgba(255,255,255,0.6); 
-            font-weight: 400; 
-          }
-
-          /* ✅ FIXED: GLASS DROPDOWN + BLACK OPTIONS */
-          .refined-select {
-            background: rgba(255,255,255,0.18) !important;
-            backdrop-filter: blur(60px) saturate(200%);
-            border: 2px solid rgba(255,255,255,0.4) !important;
-            border-radius: 24px;
-            color: #ffffff !important;
-            font-size: 16px;
-            font-weight: 600;
-            padding: 16px 28px;
-            height: 56px;
-            width: 100%;
-            cursor: pointer;
-            transition: all 0.6s cubic-bezier(0.34,1.56,0.64,1);
-            box-shadow: 
-              0 30px 100px rgba(0,0,0,0.6),
-              inset 0 1px 0 rgba(255,255,255,0.4),
-              0 0 30px rgba(251,191,36,0.1);
-            appearance: none;
-            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%23ffffff' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
-            background-repeat: no-repeat;
-            background-position: right 24px center;
-            background-size: 20px;
-          }
-
-          .refined-select:hover {
-            background: rgba(255,255,255,0.28) !important;
-            border-color: rgba(251,191,36,1) !important;
-            transform: translateY(-6px) scale(1.03);
-            box-shadow: 
-              0 45px 140px rgba(0,0,0,0.8),
-              inset 0 1px 0 rgba(255,255,255,0.6),
-              0 0 60px rgba(251,191,36,0.3);
-          }
-
-          .refined-select:focus {
-            background: rgba(255,255,255,0.35) !important;
-            border-color: rgba(251,191,36,1) !important;
-            box-shadow: 
-              0 0 0 6px rgba(251,191,36,0.25),
-              0 50px 160px rgba(0,0,0,0.9),
-              0 0 80px rgba(251,191,36,0.4);
-            transform: translateY(-8px) scale(1.04);
-          }
-
-          /* 🔥 BLACK DROPDOWN OPTIONS */
-          .refined-select option {
-            background: #1a1a1a !important;
-            color: #ffffff !important;
-            padding: 12px 16px !important;
-            font-weight: 500 !important;
-          }
-
-          .primary-button {
-            background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 50%, #d97706 100%);
-            border: none;
-            color: #1f2937 !important;
-            font-weight: 800;
-            font-size: 16px;
-            padding: 20px 44px;
-            border-radius: 24px;
-            width: 100%;
-            box-shadow: 
-              0 40px 120px rgba(251,191,36,0.5),
-              inset 0 1px 0 rgba(255,255,255,1);
-            transition: all 0.7s cubic-bezier(0.34,1.56,0.64,1);
-            position: relative;
-            overflow: hidden;
-          }
-          
-          .primary-button::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: -100%;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.5), transparent);
-            transition: left 1s ease;
-          }
-          
-          .primary-button:hover:not(:disabled)::before {
-            left: 100%;
-          }
-          
-          .primary-button:hover:not(:disabled) {
-            transform: translateY(-8px) scale(1.05);
-            box-shadow: 
-              0 60px 160px rgba(251,191,36,0.7),
-              inset 0 1px 0 rgba(255,255,255,1);
-          }
-
-          .message-card {
-            background: linear-gradient(135deg, rgba(251,191,36,0.2), rgba(245,158,11,0.15));
-            backdrop-filter: blur(40px);
-            border: 2px solid rgba(251,191,36,0.5);
-            color: #1f2937 !important;
-            padding: 20px 32px;
-            border-radius: 24px;
-            font-size: 16px;
-            font-weight: 600;
-            max-width: 480px;
-            margin: 0 auto 2rem;
-            text-align: center;
-            box-shadow: 0 35px 120px rgba(251,191,36,0.35);
-            animation: glowPulse 2s ease-in-out infinite alternate;
-          }
-
-          @keyframes glowPulse {
-            0% { box-shadow: 0 35px 120px rgba(251,191,36,0.35); }
-            100% { box-shadow: 0 35px 140px rgba(251,191,36,0.55); }
-          }
-
-          .secondary-button {
-            color: #ffffff !important;
-            font-weight: 600;
-            font-size: 15px;
-            padding: 16px 28px;
-            border: 2px solid rgba(255,255,255,0.4);
-            backdrop-filter: blur(30px);
-            border-radius: 20px;
-            background: transparent;
-            display: inline-flex;
-            align-items: center;
-            gap: 12px;
-            transition: all 0.4s cubic-bezier(0.34,1.56,0.64,1);
-            text-shadow: 0 4px 20px rgba(0,0,0,0.9);
-            text-decoration: none;
-            width: 100%;
-            justify-content: center;
-          }
-          
-          .secondary-button:hover {
-            border-color: rgba(251,191,36,0.7);
-            background: rgba(251,191,36,0.08);
-            transform: translateX(6px);
-          }
-
-          @media (max-width: 768px) {
-            .floating-input, .refined-select, .primary-button { margin-left: auto; margin-right: auto; }
-          }
-        `}</style>
-
-        <div className={`relative z-20 w-full max-w-2xl mx-auto space-y-14 ${isVisible ? 'page-enter-active' : 'page-enter'}`}>
-          <div className="text-center view-transition">
-            <h1 className="h1-hero universal-text mx-auto">
-              {view === 'signup' ? 'New Adventure Awaits' : 'Welcome Back Adventurer'}
-            </h1>
-            <h2 className="h2-subtitle universal-text mx-auto">
-              {view === 'login' && 'Hello there! Ready to explore?'}
-              {view === 'signup' && 'Share your travel preferences for perfect recommendations'}
-              {view === 'success' && 'Your journey begins now'}
-            </h2>
+      {/* Content */}
+      <div className="relative z-10 min-h-screen flex flex-col items-center justify-center px-4 py-8">
+        {/* Logo Section */}
+        <div className="text-center mb-8 animate-fadeInDown">
+          <div className="inline-flex items-center justify-center w-20 h-20 rounded-2xl gradient-amber mb-4 shadow-2xl hover:scale-105 transition-transform duration-300 floating">
+            <Globe className="w-10 h-10 text-white" />
           </div>
+          <h1 className="text-4xl font-bold text-white mb-2 tracking-tight bg-gradient-to-r from-amber-200 via-amber-300 to-orange-300 bg-clip-text text-transparent">
+            GlobeTrotter
+          </h1>
+          <p className="text-amber-100/80 text-lg font-light tracking-wide">Your journey begins here</p>
+        </div>
 
-          {view === 'success' && (
-            <div className="max-w-md mx-auto text-center space-y-10 view-transition">
-              <div className="success-icon" style={{
-                width: '80px', height: '80px', background: 'linear-gradient(135deg, #10b981, #059669)',
-                borderRadius: '24px', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontSize: '28px', fontWeight: '300', color: 'white', boxShadow: '0 35px 100px rgba(16,185,129,0.4)',
-                border: '3px solid rgba(255,255,255,0.3)', margin: '0 auto 2rem'
-              }}>✓</div>
-              <div className="message-card text-lg">{message}</div>
-              <div className="space-y-4">
-                <button onClick={() => navigate('/dashboard')} className="primary-button w-full font-semibold">
-                  Begin Journey
+        {/* Main Card - Perfect Rectangle */}
+        <div className="w-full max-w-md">
+          <div className="glass-premium rounded-2xl overflow-hidden shadow-2xl border border-white/10">
+            {/* Toggle Tab */}
+            <div className="flex bg-gradient-to-r from-white/5 to-white/10 p-1">
+              <button
+                onClick={() => setIsSignUp(false)}
+                className={`flex-1 py-4 rounded-xl text-sm font-semibold transition-all duration-300 ${
+                  !isSignUp 
+                    ? 'gradient-amber text-white shadow-lg' 
+                    : 'text-white/70 hover:text-white hover:bg-white/5'
+                }`}
+              >
+                Sign In
+              </button>
+              <button
+                onClick={() => setIsSignUp(true)}
+                className={`flex-1 py-4 rounded-xl text-sm font-semibold transition-all duration-300 ${
+                  isSignUp 
+                    ? 'gradient-amber text-white shadow-lg' 
+                    : 'text-white/70 hover:text-white hover:bg-white/5'
+                }`}
+              >
+                Sign Up
+              </button>
+            </div>
+
+            {/* Form Content */}
+            <div className="px-8 py-12 sm:py-14">
+              <form onSubmit={handleSubmit} className="space-y-8">
+                {isSignUp && (
+                  <div className="space-y-4">
+                    <label className="text-white/90 text-sm font-medium tracking-wide">Full Name</label>
+                    <div className="relative group">
+                      <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                        <User className="w-5 h-5 text-white/60 group-focus-within:text-amber-400 transition-colors" />
+                      </div>
+                      <input
+                        type="text"
+                        value={formData.name}
+                        onChange={(e) => setFormData({...formData, name: e.target.value})}
+                        className="input-glass pl-12 w-full transition-all duration-300 focus:ring-2 focus:ring-amber-400/50"
+                        placeholder="Enter your full name"
+                        required={isSignUp}
+                      />
+                    </div>
+                  </div>
+                )}
+
+                <div className="space-y-4">
+                  <label className="text-white/90 text-sm font-medium tracking-wide">Email Address</label>
+                  <div className="relative group">
+                    <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                      <Mail className="w-5 h-5 text-white/60 group-focus-within:text-amber-400 transition-colors" />
+                    </div>
+                    <input
+                      type="email"
+                      value={formData.email}
+                      onChange={(e) => setFormData({...formData, email: e.target.value})}
+                      className="input-glass pl-12 w-full transition-all duration-300 focus:ring-2 focus:ring-amber-400/50"
+                      placeholder="you@example.com"
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <label className="text-white/90 text-sm font-medium tracking-wide">Password</label>
+                    {!isSignUp && (
+                      <Link 
+                        to="/forgot-password" 
+                        className="text-amber-400 hover:text-amber-300 text-sm transition-colors duration-300 hover:underline"
+                      >
+                        Forgot password?
+                      </Link>
+                    )}
+                  </div>
+                  <div className="relative group">
+                    <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                      <Lock className="w-5 h-5 text-white/60 group-focus-within:text-amber-400 transition-colors" />
+                    </div>
+                    <input
+                      type={showPassword ? 'text' : 'password'}
+                      value={formData.password}
+                      onChange={(e) => setFormData({...formData, password: e.target.value})}
+                      className="input-glass pl-12 pr-12 w-full transition-all duration-300 focus:ring-2 focus:ring-amber-400/50"
+                      placeholder="Enter your password"
+                      required
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute inset-y-0 right-0 pr-4 flex items-center text-white/50 hover:text-white transition-colors duration-300"
+                    >
+                      {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                    </button>
+                  </div>
+                </div>
+
+                {isSignUp && (
+                  <div className="space-y-4">
+                    <label className="text-white/90 text-sm font-medium tracking-wide">Confirm Password</label>
+                    <div className="relative group">
+                      <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                        <Lock className="w-5 h-5 text-white/60 group-focus-within:text-amber-400 transition-colors" />
+                      </div>
+                      <input
+                        type="password"
+                        value={formData.confirmPassword}
+                        onChange={(e) => setFormData({...formData, confirmPassword: e.target.value})}
+                        className="input-glass pl-12 w-full transition-all duration-300 focus:ring-2 focus:ring-amber-400/50"
+                        placeholder="Confirm your password"
+                        required={isSignUp}
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {!isSignUp && (
+                  <div className="flex items-center justify-between">
+                    <label className="flex items-center space-x-3 text-white/80 cursor-pointer group">
+                      <div className="relative">
+                        <input type="checkbox" className="sr-only peer" />
+                        <div className="w-5 h-5 rounded border-2 border-white/30 peer-checked:border-amber-400 peer-checked:bg-amber-400 flex items-center justify-center transition-all duration-300 group-hover:border-amber-300">
+                          <svg 
+                            className="w-3 h-3 text-white opacity-0 peer-checked:opacity-100 transition-opacity duration-300" 
+                            fill="none" 
+                            viewBox="0 0 24 24" 
+                            stroke="currentColor"
+                          >
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                          </svg>
+                        </div>
+                      </div>
+                      <span className="text-sm select-none">Remember me</span>
+                    </label>
+                  </div>
+                )}
+
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="w-full gradient-amber text-white font-semibold py-4 rounded-xl text-base transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] hover:shadow-2xl disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-3 group relative overflow-hidden"
+                >
+                  <div className="absolute inset-0 bg-gradient-to-r from-amber-600 to-orange-600 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                  <span className="relative z-10 flex items-center gap-3">
+                    {loading ? (
+                      <div className="w-6 h-6 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    ) : (
+                      <>
+                        <Plane className="w-5 h-5 group-hover:translate-x-1 transition-transform duration-300" />
+                        <span>{isSignUp ? 'Create Account' : 'Sign In to Continue'}</span>
+                      </>
+                    )}
+                  </span>
                 </button>
-                <button onClick={resetForm} className="secondary-button">Return to Login</button>
+              </form>
+
+              {/* Divider */}
+              <div className="relative my-8">
+                <div className="absolute inset-0 flex items-center">
+                  <div className="w-full border-t border-white/20"></div>
+                </div>
+                <div className="relative flex justify-center text-sm">
+                  <span className="px-6 py-2 bg-gradient-to-br from-gray-900 via-gray-800 to-black text-white/60 tracking-wide text-xs font-medium rounded-lg transition-all duration-300">Or continue with</span>
+                </div>
+              </div>
+
+              {/* Social Login */}
+              <div className="grid grid-cols-2 gap-4">
+                <button className="btn-glass py-3.5 rounded-xl flex items-center justify-center space-x-3 transition-all duration-300 hover:scale-[1.02] hover:bg-white/10 group">
+                  <svg className="w-5 h-5 text-white/70 group-hover:text-white transition-colors" viewBox="0 0 24 24">
+                    <path fill="currentColor" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                  </svg>
+                  <span className="text-sm font-medium text-white/80 group-hover:text-white transition-colors">Google</span>
+                </button>
+                <button className="btn-glass py-3.5 rounded-xl flex items-center justify-center space-x-3 transition-all duration-300 hover:scale-[1.02] hover:bg-white/10 group">
+                  <svg className="w-5 h-5 text-white/70 group-hover:text-white transition-colors" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
+                  </svg>
+                  <span className="text-sm font-medium text-white/80 group-hover:text-white transition-colors">GitHub</span>
+                </button>
               </div>
             </div>
-          )}
 
-          {view === 'login' && (
-            <form onSubmit={handleLogin} className="max-w-md mx-auto space-y-8 view-transition">
-              {message && !loading && <div className="message-card">{message}</div>}
-              
-              <div className="floating-field">
-                <input 
-                  name="email" 
-                  value={formData.email} 
-                  onChange={handleInputChange} 
-                  className="floating-input" 
-                  placeholder="Email address"
-                  required 
-                  autoComplete="email" 
-                />
-              </div>
-              
-              <div className="floating-field">
-                <input 
-                  type="password" 
-                  name="password" 
-                  value={formData.password} 
-                  onChange={handleInputChange} 
-                  className="floating-input" 
-                  placeholder="Password"
-                  required 
-                  autoComplete="current-password" 
-                />
-              </div>
-              
-              <button 
-                type="submit" 
-                disabled={loading} 
-                className="primary-button disabled:opacity-50 disabled:cursor-not-allowed"
+            {/* Footer of Card */}
+            <div className="px-8 pb-8 pt-6 border-t border-white/10">
+              <p className="text-center text-white/60 text-sm leading-relaxed">
+                By continuing, you agree to our{' '}
+                <Link to="/terms" className="text-amber-400 hover:text-amber-300 transition-colors duration-300 hover:underline">
+                  Terms of Service
+                </Link>
+                {' '}and{' '}
+                <Link to="/privacy" className="text-amber-400 hover:text-amber-300 transition-colors duration-300 hover:underline">
+                  Privacy Policy
+                </Link>
+              </p>
+            </div>
+          </div>
+
+          {/* Bottom Toggle Link */}
+          <div className="text-center mt-6">
+            <p className="text-white/60 text-sm">
+              {isSignUp ? 'Already have an account? ' : "Don't have an account? "}
+              <button
+                onClick={() => setIsSignUp(!isSignUp)}
+                className="text-amber-400 hover:text-amber-300 font-medium transition-colors duration-300 hover:underline"
               >
-                {loading ? (
-                  <>
-                    <div className="w-6 h-6 border-2 border-gray-400/30 border-t-amber-600 rounded-full animate-spin mr-3 inline-block" />
-                    Signing In
-                  </>
-                ) : (
-                  'Sign In'
-                )}
+                {isSignUp ? 'Sign In' : 'Sign Up'}
               </button>
-              
-              <div className="text-center pt-6">
-                <button type="button" onClick={() => setView('signup')} className="secondary-button">
-                  Create New Account
-                </button>
-              </div>
-            </form>
-          )}
-
-          {view === 'signup' && (
-            <form onSubmit={handleSignup} className="max-w-lg mx-auto space-y-8 view-transition">
-              {message && !loading && <div className="message-card">{message}</div>}
-              
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                <div className="floating-field">
-                  <input 
-                    name="name" 
-                    value={formData.name} 
-                    onChange={handleInputChange} 
-                    className="floating-input" 
-                    placeholder="Full name"
-                    required 
-                  />
-                </div>
-                <div className="floating-field">
-                  <input 
-                    name="email" 
-                    type="email" 
-                    value={formData.email} 
-                    onChange={handleInputChange} 
-                    className="floating-input" 
-                    placeholder="Email address"
-                    required 
-                    autoComplete="email" 
-                  />
-                </div>
-              </div>
-
-              <div className="floating-field">
-                <input 
-                  name="password" 
-                  type="password" 
-                  value={formData.password} 
-                  onChange={handleInputChange} 
-                  className="floating-input" 
-                  placeholder="Create password"
-                  required 
-                />
-              </div>
-
-              <div className="space-y-8">
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                  <div className="floating-field">
-                    <select 
-                      name="adventureType" 
-                      value={formData.adventureType} 
-                      onChange={handleInputChange} 
-                      className="refined-select" 
-                      required
-                    >
-                      <option value="">✨ Adventure preference</option>
-                      <option value="beach">🏖️ Beach Getaway</option>
-                      <option value="mountain">⛰️ Mountain Trek</option>
-                      <option value="city">🏙️ City Exploration</option>
-                      <option value="roadtrip">🚗 Road Trip</option>
-                      <option value="cultural">🌍 Cultural Immersion</option>
-                    </select>
-                  </div>
-                  <div className="floating-field">
-                    <select 
-                      name="budgetRange" 
-                      value={formData.budgetRange} 
-                      onChange={handleInputChange} 
-                      className="refined-select" 
-                      required
-                    >
-                      <option value="">💰 Budget range</option>
-                      <option value="budget">$500 - $1500</option>
-                      <option value="comfort">$1500 - $5000</option>
-                      <option value="luxury">$5000+</option>
-                    </select>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                  <div className="floating-field">
-                    <select 
-                      name="travelStyle" 
-                      value={formData.travelStyle} 
-                      onChange={handleInputChange} 
-                      className="refined-select" 
-                      required
-                    >
-                      <option value="">👥 Travel style</option>
-                      <option value="solo">🌟 Solo Travel</option>
-                      <option value="couple">💕 With Partner</option>
-                      <option value="family">👨‍👩‍👧‍👦 Family</option>
-                      <option value="friends">👯 Friends</option>
-                    </select>
-                  </div>
-                  <div className="floating-field">
-                    <select 
-                      name="tripDuration" 
-                      value={formData.tripDuration} 
-                      onChange={handleInputChange} 
-                      className="refined-select" 
-                      required
-                    >
-                      <option value="">⏱️ Duration</option>
-                      <option value="weekend">🌙 Weekend (2-4 days)</option>
-                      <option value="week">📅 1 Week</option>
-                      <option value="twoweeks">🌞 2 Weeks</option>
-                      <option value="month">🌍 1 Month+</option>
-                    </select>
-                  </div>
-                </div>
-
-                <div className="floating-field">
-                  <input 
-                    name="preferredDestinations" 
-                    value={formData.preferredDestinations} 
-                    onChange={handleInputChange} 
-                    className="floating-input" 
-                    placeholder="🌍 Favorite destinations (optional)"
-                  />
-                </div>
-              </div>
-
-              <button 
-                type="submit" 
-                disabled={loading} 
-                className="primary-button w-full disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {loading ? (
-                  <>
-                    <div className="w-6 h-6 border-2 border-gray-400/30 border-t-amber-600 rounded-full animate-spin mr-3 inline-block" />
-                    Creating Account
-                  </>
-                ) : (
-                  '🚀 Create Account'
-                )}
-              </button>
-
-              <div className="text-center pt-8">
-                <button type="button" onClick={() => setView('login')} className="secondary-button">
-                  ← Return to Sign In
-                </button>
-              </div>
-            </form>
-          )}
+            </p>
+          </div>
         </div>
       </div>
-    </>
+    </div>
   )
 }
 
-export default GlobeTrotterAuth
+export default Login
